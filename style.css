@@ -1,0 +1,472 @@
+/* =========================================================
+   style.css — เบิกค่าอินเทอร์เน็ต 3BB
+   สารบัญ: 1.ตัวแปรสี  2.พื้นฐาน  3.หัวเว็บ  4.การ์ด  5.ฟอร์ม/ปุ่ม
+           6.สถานะการจ่าย/รายชื่อศูนย์  7.ผลลัพธ์  8.ใบเบิกจ่าย  9.พิมพ์
+   ========================================================= */
+
+/* ---------- 1. ตัวแปรสี (โหมดสว่าง / มืด) ---------- */
+:root {
+  --bg: #f4f5f7;
+  --fg: #1b1e23;
+  --muted: #667085;
+  --card: #ffffff;
+  --bd: #e3e6eb;
+  --field: #f8f9fb;
+  --ac: #e8590c;
+  --ac-2: #ff8a3d;
+  --ac-soft: #fff1e8;
+  --ok-soft: #fff7ed;
+  --err: #c2410c;
+  --ok: #15803d;
+  --ok-bg: #e9f7ef;
+  --ok-bd: #b7e4c7;
+  --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 4px 16px rgba(16, 24, 40, .06);
+  --radius: 16px;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111317;
+    --fg: #eceef2;
+    --muted: #9aa3b2;
+    --card: #1a1d22;
+    --bd: #2c3139;
+    --field: #14171b;
+    --ac-soft: #3a2214;
+    --ok-soft: #2a1d14;
+    --err: #ff9b66;
+    --ok: #4ade80;
+    --ok-bg: #12261a;
+    --ok-bd: #1f4d2e;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #111317;
+  --fg: #eceef2;
+  --muted: #9aa3b2;
+  --card: #1a1d22;
+  --bd: #2c3139;
+  --field: #14171b;
+  --ac-soft: #3a2214;
+  --ok-soft: #2a1d14;
+  --err: #ff9b66;
+  --ok: #4ade80;
+  --ok-bg: #12261a;
+  --ok-bd: #1f4d2e;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+  color-scheme: dark;
+}
+
+/* ---------- 2. พื้นฐาน ---------- */
+*, *::before, *::after { box-sizing: inherit; }
+
+body {
+  margin: 0;
+  padding: 20px 16px 32px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Sarabun", "Noto Sans Thai", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 760px; margin: 0 auto; }
+
+label {
+  display: block;
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.note {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ---------- 3. หัวเว็บ ---------- */
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, var(--ac), var(--ac-2));
+  color: #fff;
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(232, 89, 12, .25);
+}
+
+.logo {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  background: rgba(255, 255, 255, .18);
+  border: 1px solid rgba(255, 255, 255, .35);
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: .5px;
+}
+
+.hero h1 { margin: 0; font-size: 21px; font-weight: 700; line-height: 1.3; }
+.hero p  { margin: 2px 0 0; font-size: 13px; opacity: .9; }
+
+/* ---------- 4. การ์ด ---------- */
+.card {
+  margin-bottom: 16px;
+  padding: 18px;
+  background: var(--card);
+  border: 1px solid var(--bd);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+#result { display: none; animation: rise .25s ease-out; }   /* แสดงเมื่อค้นหาเจอ */
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.card-h {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.card-h:not(:first-child) { margin-top: 22px; }
+
+.step {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  background: var(--ac-soft);
+  color: var(--ac);
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ---------- 5. ฟอร์ม / ปุ่ม ---------- */
+button {
+  padding: 10px 18px;
+  background: var(--ac);
+  color: #fff;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, transform .05s, box-shadow .15s;
+}
+
+button:hover  { background: #d24f0a; }
+button:active { transform: translateY(1px); }
+
+button:focus-visible,
+input:focus-visible,
+summary:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--ac) 35%, transparent);
+  outline-offset: 2px;
+}
+
+input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--field);
+  color: var(--fg);
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  font: inherit;
+  transition: border-color .15s, background .15s;
+}
+
+input:focus { outline: none; border-color: var(--ac); background: var(--card); }
+input::placeholder { color: var(--muted); opacity: .7; }
+
+.search-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.search-row { display: flex; gap: 8px; }
+.search-row button { flex: none; }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
+.form-grid .span2 { grid-column: 1 / -1; }
+
+@media (max-width: 520px) {
+  .form-grid { grid-template-columns: 1fr; }
+}
+
+.btn-print {
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px 18px;
+  font-size: 16px;
+  box-shadow: 0 6px 16px rgba(232, 89, 12, .28);
+}
+
+#msg {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--ok-soft);
+  color: var(--err);
+  border: 1px solid color-mix(in srgb, var(--err) 25%, transparent);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+#msg:empty { display: none; }
+
+/* ---------- 6. สถานะการจ่าย + รายชื่อศูนย์ ---------- */
+[hidden] { display: none !important; }
+
+.hint { margin-left: auto; color: var(--muted); font-size: 12px; font-weight: 400; }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background: var(--field);
+  border: 1px solid var(--bd);
+  border-radius: 12px;
+}
+
+.stat b       { font-size: 26px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.stat-label   { color: var(--muted); font-size: 12px; font-weight: 600; }
+.stat-amt     { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.stat.paid    { background: var(--ok-bg); border-color: var(--ok-bd); }
+.stat.paid b  { color: var(--ok); }
+.stat.unpaid  { background: var(--ac-soft); border-color: color-mix(in srgb, var(--ac) 30%, transparent); }
+.stat.unpaid b { color: var(--ac); }
+
+@media (max-width: 420px) {
+  .stat { padding: 10px; }
+  .stat b { font-size: 22px; }
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin: 14px 0 10px;
+  padding: 4px;
+  background: var(--field);
+  border: 1px solid var(--bd);
+  border-radius: 12px;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px 10px;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 9px;
+  font-weight: 600;
+}
+
+.tab:hover { background: var(--card); color: var(--fg); }
+.tab.on    { background: var(--card); color: var(--ac); box-shadow: 0 0 0 1px var(--bd), var(--shadow); }
+
+.center-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.center {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 10px 12px;
+  background: var(--field);
+  color: var(--fg);
+  border: 1px solid var(--bd);
+  border-radius: 12px;
+  font-weight: 400;
+  text-align: left;
+}
+
+.center:hover { background: var(--ac-soft); border-color: var(--ac); }
+.center.on    { background: var(--ac-soft); border-color: var(--ac); box-shadow: inset 3px 0 0 var(--ac); }
+.center.is-paid .c-amt { color: var(--ok); }
+
+/* การ์ดศูนย์: ชื่อ / รหัส·วันครบกำหนด (เต็มแถว) / ป้ายสถานะ + ยอดเงิน */
+.c-name { grid-column: 1 / -1; font-weight: 600; }
+.c-meta { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+.c-amt  { color: var(--ac); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.empty { margin: 8px 0 0; color: var(--muted); font-size: 13px; text-align: center; }
+
+.chip {
+  justify-self: start;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.center .chip { margin-top: 4px; }
+.center .c-amt { margin-top: 4px; }
+.chip.paid    { background: var(--ok-bg); color: var(--ok); }
+.chip.unpaid  { background: color-mix(in srgb, var(--muted) 14%, transparent); color: var(--muted); }
+.summary .chip { display: inline-block; margin-top: 4px; }
+
+/* ---------- 7. ผลลัพธ์ ---------- */
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 16px;
+  background: var(--ac-soft);
+  border-radius: 12px;
+}
+
+.sum-label { color: var(--muted); font-size: 13px; }
+.sum-name  { font-size: 20px; font-weight: 700; line-height: 1.3; }
+
+.amount {
+  color: var(--ac);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.amount small { color: var(--muted); font-size: 14px; font-weight: 500; }
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 12px 0 0;
+}
+
+.facts > div {
+  padding: 10px 12px;
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+}
+
+.facts dt { color: var(--muted); font-size: 12px; }
+.facts dd { margin: 2px 0 0; font-weight: 600; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+
+.alt-no { display: block; color: var(--muted); font-size: 12px; font-weight: 400; }
+.alt-no:empty { display: none; }
+
+/* ---------- 8. ใบรายงานการขอเบิกค่าใช้จ่าย (ซ่อนบนหน้าจอ) ---------- */
+/* ทั้งใบอยู่ในกรอบเดียว (รวมช่องลงชื่อ) ใช้หน่วย mm ให้พิมพ์ออกมาเท่ากระดาษจริง */
+#form {
+  display: none;
+  flex-direction: column;
+  width: 100%;
+  min-height: 268mm;
+  background: #fff;
+  color: #000;
+  border: 1px solid #000;
+  font-family: "Sarabun", "Noto Sans Thai", sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.35;
+}
+
+#form table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+
+#form td { padding: 0 2.5mm; border: 1px solid #000; vertical-align: middle; }
+
+/* เส้นขอบนอกใช้ของ #form แทน (กันเส้นซ้อนหนา 2 เท่า) */
+#form td:first-child          { border-left: 0; }
+#form td:last-child           { border-right: 0; }
+#form td[rowspan]             { border-right: 0; }
+.f-head tr:first-child td     { border-top: 0; }
+.f-items tr:first-child td    { border-top: 0; }
+
+/* หัวใบ */
+.f-head .f-left { width: 50%; height: 30mm; padding: 2mm 3mm; vertical-align: top; }
+.f-title  { margin-top: 1mm; font-size: 17pt; font-weight: 700; text-align: center; }
+.f-sub    { margin-top: 4mm; font-size: 9.5pt; }
+.f-sub2   { margin-top: 1mm; font-size: 10pt; }
+
+.box {
+  display: inline-block;
+  width: 5mm;
+  height: 5mm;
+  margin: 0 2mm 0 6mm;
+  border: 1px solid #000;
+  vertical-align: -1mm;
+}
+
+.box.gap { margin-left: 22mm; }
+
+.f-logo   { text-align: center; }
+.f-mark   { display: flex; justify-content: center; align-items: center; height: 17mm; }
+.f-mark img { max-height: 17mm; max-width: 80%; }
+.f-ki     { display: none; padding: 0 3mm; border: 2px solid #000; font-size: 22pt; font-weight: 700; line-height: 1.2; }
+.f-mark.nologo .f-ki { display: inline-block; }    /* ไม่มีไฟล์ logo.jpg / logo.png -> แสดงตัวอักษร KI แทน */
+.f-company { margin-top: 2mm; font-size: 11.5pt; font-weight: 700; }
+
+.f-dept   { height: 22mm; padding-top: 6mm !important; text-align: center; font-size: 13pt; font-weight: 700; }
+
+/* รายการ 2 ฝั่ง */
+.f-items td      { height: 6.6mm; }
+.ln              { display: flex; justify-content: space-between; gap: 3mm; }
+.f-items .f-car  { height: 12mm; }
+.f-car-baht      { display: block; padding-right: 22%; text-align: right; font-weight: 700; }
+.f-total         { height: 11mm; text-align: center; font-size: 12pt; font-weight: 700; }
+
+/* ช่องลงชื่อ: อยู่ล่างสุดของกรอบ */
+.sig {
+  flex: 1;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  padding: 0 4mm 14mm;
+  font-size: 10.5pt;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* ---------- 9. โหมดพิมพ์: แสดงเฉพาะใบเบิกจ่าย (A4 แนวตั้ง 1 หน้า) ---------- */
+@page { size: A4 portrait; margin: 12mm 10mm; }
+
+@media print {
+  :root { padding: 0; }
+  body { padding: 0; background: #fff; color: #000; }
+  .wrap { display: none; }
+  #form { display: flex !important; break-inside: avoid; }
+}

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>เบิกค่าอินเทอร์เน็ต 3BB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap">
+  <meta name="theme-color" content="#e8590c">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <!-- ===================== หน้าจอหลัก ===================== -->
+  <div class="wrap">
+    <header class="hero">
+      <div class="logo" aria-hidden="true">3BB</div>
+      <div>
+        <h1>เบิกค่าอินเทอร์เน็ต 3BB</h1>
+        <p>ค้นหาศูนย์ → ตรวจข้อมูล → พิมพ์ใบรายงานการขอเบิกค่าใช้จ่าย</p>
+      </div>
+    </header>
+
+    <!-- ส่วนที่ 1: ค้นหา -->
+    <section class="card">
+      <h2 class="card-h"><span class="step">1</span>ค้นหาศูนย์</h2>
+      <div class="search-grid">
+        <div>
+          <label for="accIn">รหัสลูกค้า</label>
+          <div class="search-row">
+            <input id="accIn" inputmode="numeric" autocomplete="off" placeholder="เช่น 410443826">
+            <button id="accBtn" type="button">ค้นหา</button>
+          </div>
+        </div>
+        <div>
+          <label for="svcIn">หมายเลขบริการ</label>
+          <div class="search-row">
+            <input id="svcIn" autocomplete="off" placeholder="เช่น A212119700542">
+            <button id="svcBtn" type="button">ค้นหา</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="msg" role="status"></div>
+    </section>
+
+    <!-- สถานะการจ่าย: อ่านจากคอลัมน์ "วันที่จ่าย" ใน data.xlsx (มีค่า = จ่ายแล้ว) -->
+    <section class="card">
+      <h2 class="card-h">สถานะการจ่าย <span class="hint">แตะศูนย์เพื่อเปิดใบเบิก</span></h2>
+      <div class="stats">
+        <div class="stat paid"><span class="stat-label">จ่ายแล้ว</span><b id="sPaidN">0</b><span id="sPaidAmt" class="stat-amt"></span></div>
+        <div class="stat unpaid"><span class="stat-label">ยังไม่จ่าย</span><b id="sUnpaidN">0</b><span id="sUnpaidAmt" class="stat-amt"></span></div>
+        <div class="stat"><span class="stat-label">ทั้งหมด</span><b id="sAllN">0</b><span id="sAllAmt" class="stat-amt"></span></div>
+      </div>
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab" data-f="all">ทั้งหมด</button>
+        <button type="button" class="tab" data-f="paid">จ่ายแล้ว</button>
+        <button type="button" class="tab" data-f="unpaid">ยังไม่จ่าย</button>
+      </div>
+      <div id="centerList" class="center-list"></div>
+      <p id="listEmpty" class="empty" hidden></p>
+    </section>
+
+    <!-- ส่วนที่ 2–3: ผลลัพธ์ + ข้อมูลใบเบิก (ซ่อนจนกว่าจะค้นหาเจอ) -->
+    <section id="result" class="card">
+      <h2 class="card-h"><span class="step">2</span>ตรวจข้อมูล</h2>
+      <div class="summary">
+        <div>
+          <div class="sum-label">ค่าอินเทอร์เน็ต 3BB · ลำดับ <span id="rNo"></span></div>
+          <div id="rName" class="sum-name"></div>
+          <span id="rStatus" class="chip"></span>
+        </div>
+        <div class="amount"><span id="rAmt"></span> <small>บาท</small></div>
+      </div>
+      <dl class="facts">
+        <div><dt>รหัสลูกค้า</dt><dd id="rAcc"></dd></div>
+        <div><dt>หมายเลขบริการ</dt><dd><span id="rSvc"></span><small id="rAlt" class="alt-no"></small></dd></div>
+        <div><dt>กำหนดชำระ</dt><dd id="rDue"></dd></div>
+        <div><dt>รอบค่าบริการ</dt><dd id="rPeriod"></dd></div>
+      </dl>
+
+      <h2 class="card-h"><span class="step">3</span>ข้อมูลใบเบิก</h2>
+      <div class="form-grid">
+        <div class="span2">
+          <label for="period">รอบเดือน</label>
+          <input id="period" placeholder="คำนวณจากวันกำหนดชำระอัตโนมัติ แก้ได้">
+        </div>
+        <div>
+          <label for="maker">ผู้จัดทำ</label>
+          <input id="maker" value="นางสาวเพชรรัตน์ มะโนนิน">
+        </div>
+        <div>
+          <label for="makerPos">ตำแหน่งผู้จัดทำ</label>
+          <input id="makerPos" value="เจ้าหน้าที่บริหารงาน GPS.">
+        </div>
+        <div>
+          <label for="appr">ผู้อนุมัติ</label>
+          <input id="appr" value="นางโสภิดา คำอินทร์">
+        </div>
+        <div>
+          <label for="apprPos">ตำแหน่งผู้อนุมัติ</label>
+          <input id="apprPos" value="ผู้จัดการส่วนสำนักงานจัดหาวัตถุดิบ">
+        </div>
+      </div>
+
+      <button id="printBtn" type="button" class="btn-print">🖨️ พิมพ์ใบรายงานการขอเบิกค่าใช้จ่าย</button>
+    </section>
+
+    <p class="note">
+      ข้อมูลศูนย์แก้ที่ไฟล์ data.xlsx · ลิงก์ตรงของแต่ละศูนย์: ?acc=รหัสลูกค้า
+    </p>
+  </div>
+
+  <!-- ===================== ใบรายงานการขอเบิกค่าใช้จ่าย (ใช้พิมพ์) ===================== -->
+  <!-- โครงตามแบบฟอร์มกระดาษของฝ่าย: ตาราง 2 ฝั่ง + ช่องลงชื่ออยู่ในกรอบเดียวกัน (ขนาด A4) -->
+  <div id="form">
+    <table class="f-head">
+      <tr>
+        <td class="f-left">
+          <div class="f-title">รายงานการขอเบิกค่าใช้จ่าย</div>
+          <div class="f-sub">ประจำรอบเดือน &nbsp;<span id="fPeriod"></span></div>
+          <div class="f-sub2">งวดที่ <span class="box"></span> 1-15 <span class="box gap"></span> 16-31</div>
+        </td>
+        <td class="f-logo">
+          <div class="f-mark">
+            <!-- โลโก้: logo.jpg ก่อน ไม่มีก็ลอง logo.png ไม่มีทั้งคู่ -> แสดงตัวอักษร KI -->
+            <img src="logo.jpg" alt="" onerror="if (!this.dataset.png) { this.dataset.png = 1; this.src = 'logo.png'; } else { this.parentNode.classList.add('nologo'); this.remove(); }">
+            <span class="f-ki">KI</span>
+          </div>
+          <div class="f-company">บริษัท น้ำตาลสุรินทร์ จำกัด</div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" class="f-dept">ฝ่ายจัดหาวัตถุดิบ</td>
+      </tr>
+    </table>
+
+    <table class="f-items">
+      <tr><td><b><u>สำนักงาน</u></b></td><td></td></tr>
+      <tr>
+        <td><span class="ln"><span>ค่าอินเทอร์เน็ต<span id="fName"></span> (3BB)</span><span><span id="fAmt"></span> &nbsp;บาท</span></span></td>
+        <td>ค่าอินเทอร์เน็ต บาท</td>
+      </tr>
+      <tr><td>ค่าอินเทอร์เน็ต บาท</td><td>ค่าอินเทอร์เน็ตศูนย์บาท</td></tr>
+      <tr><td>ค่าอินเทอร์เน็ต บาท</td><td>ค่าอินเทอร์เน็ตศูนย์บาท</td></tr>
+      <tr><td>ค่าอินเทอร์เน็ต บาท</td><td>ค่าอินเทอร์เน็ตศูนย์ บาท</td></tr>
+      <tr><td><b><u>วัสดุอุปกรณ์ สนง.</u></b></td><td><b><u>ค่าซ่อมแซม</u></b></td></tr>
+      <tr>
+        <td><span class="ln"><span>ค่า &nbsp;วัสดุสำนักงาน</span><span>บาท</span></span></td>
+        <td><span class="ln"><span>ค่าซ่อมแซม</span><span>บาท</span></span></td>
+      </tr>
+      <tr><td><span class="ln"><span>ค่า</span><span>บาท</span></span></td><td><span class="ln"><span>ค่าซ่อมแซม</span><span>บาท</span></span></td></tr>
+      <tr><td><span class="ln"><span>ค่า</span><span>บาท</span></span></td><td><span class="ln"><span>ค่าซ่อมแซม</span><span>บาท</span></span></td></tr>
+      <tr><td><span class="ln"><span>ค่า</span><span>บาท</span></span></td><td><span class="ln"><span>ค่าซ่อมแซม</span><span>บาท</span></span></td></tr>
+      <tr><td><span class="ln"><span>ค่า</span><span>บาท</span></span></td><td><span class="ln"><span>ค่า</span><span>บาท</span></span></td></tr>
+      <tr><td><span class="ln"><span>ค่า</span><span>บาท</span></span></td><td><span class="ln"><span>ค่า</span><span>บาท</span></span></td></tr>
+      <tr><td><b><u>รถยนต์</u></b></td><td rowspan="2"></td></tr>
+      <tr><td class="f-car"><span class="f-car-baht">บาท</span></td></tr>
+      <tr>
+        <td colspan="2" class="f-total">
+          รวมขอเบิกค่าใช้จ่ายทั้งหมด &nbsp;<span id="fAmt2"></span>&nbsp; บาท &nbsp;(<span id="fWords"></span>)
+        </td>
+      </tr>
+    </table>
+
+    <div class="sig">
+      <div>ลงชื่อ...................................ผู้จัดทำ<br><span id="fMaker"></span><br><span id="fMakerPos"></span></div>
+      <div>ลงชื่อ...................................ผู้อนุมัติ<br><span id="fAppr"></span><br><span id="fApprPos"></span></div>
+    </div>
+  </div>
+
+<script>
+/* =========================================================
+   1. ข้อมูลศูนย์ — โหลดจาก data.xlsx (ถ้ามี) หรือ data.csv แล้วแก้เลขที่ Excel ทำเพี้ยนให้อัตโนมัติ
+   คอลัมน์: ลำดับ, ชื่อ, หมายเลขบริการ, รหัสลูกค้า, ค่าบริการ, กำหนดชำระ, หมายเลขบริการสำรอง(ถ้ามี), วันที่จ่าย(ถ้ามี)
+   ========================================================= */
+let CENTERS = [];
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cell = "", quoted = false;
+  text = text.replace(/^\uFEFF/, "");
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else quoted = false; }
+      else cell += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === ",") { row.push(cell); cell = ""; }
+    else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && text[i + 1] === "\n") i++;
+      row.push(cell); cell = ""; rows.push(row); row = [];
+    } else cell += ch;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+
+const pad2 = n => String(n).padStart(2, "0");
+
+// รหัส/หมายเลข: ถ้า Excel เก็บเป็นตัวเลข ให้แปลงกลับเป็นข้อความเต็ม ๆ (เช่น 660662393)
+function normCode(v) {
+  if (typeof v === "number") return String(Math.round(v));
+  return String(v == null ? "" : v).trim();
+}
+
+// วันที่: รับได้ทั้งข้อความ 04/11/2569, 04/11/2026 และเลขวันที่ของ Excel -> dd/mm/ปีพ.ศ.
+function normDate(v) {
+  if (typeof v === "number") {                       // เลขลำดับวันที่ของ Excel
+    const d = new Date(Math.round((v - 25569) * 86400000));
+    let y = d.getUTCFullYear();
+    if (y < 2400) y += 543;
+    return pad2(d.getUTCDate()) + "/" + pad2(d.getUTCMonth() + 1) + "/" + y;
+  }
+  const s = String(v == null ? "" : v).trim();
+  const m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if (!m) return s;
+  let y = +m[3];
+  if (y < 2400) y += 543;
+  return pad2(m[1]) + "/" + pad2(m[2]) + "/" + y;
+}
+
+function normAmount(v) {
+  return typeof v === "number" ? v : (parseFloat(String(v).replace(/,/g, "")) || 0);
+}
+
+// อ่านแถวข้อมูล: data.xlsx ก่อน (เลขไม่เพี้ยน) แล้วสำรองด้วย data.csv
+async function fetchRows() {
+  try {
+    const res = await fetch("data.xlsx?" + Date.now());
+    if (res.ok && window.XLSX) {
+      const wb = XLSX.read(await res.arrayBuffer(), { type: "array" });
+      return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: "" });
+    }
+  } catch (e) { /* ไม่มี xlsx -> ใช้ csv */ }
+  const res = await fetch("data.csv?" + Date.now());
+  if (!res.ok) throw new Error(res.status);
+  return parseCSV(await res.text());
+}
+
+async function loadCenters() {
+  try {
+    const rows = await fetchRows();
+    CENTERS = rows.slice(1)
+      .filter(r => r.length >= 6 && normCode(r[2]) && normCode(r[3]))
+      .map(r => ({
+        no:   String(r[0]).trim(),
+        name: String(r[1]).trim(),
+        svc:  normCode(r[2]),
+        acc:  normCode(r[3]),
+        amt:  normAmount(r[4]),
+        due:  normDate(r[5]),
+        alt:  normCode(r[6]),
+        paid: normDate(r[7])                         // วันที่จ่าย (ว่าง = ยังไม่จ่าย)
+      }));
+    const bad = CENTERS.filter(d => /E\+/i.test(d.acc) || /E\+/i.test(d.svc));
+    if (bad.length) {
+      setMsg("ข้อมูลเพี้ยน: รหัสของ " + bad.length + " ศูนย์เป็นรูป 6.8E+08 (Excel ปัดเลขทิ้ง) " +
+             "กรุณาใช้ไฟล์ .xlsx ต้นฉบับ หรือตั้งคอลัมน์เป็น Text ก่อนบันทึก CSV");
+    }
+  } catch (e) {
+    setMsg("โหลดข้อมูลศูนย์ไม่ได้ (data.xlsx / data.csv) [" + (e && e.message || "error") + "]");
+  }
+}
+
+/* =========================================================
+   2. ตัวช่วยทั่วไป
+   ========================================================= */
+const $ = id => document.getElementById(id);
+const setMsg = text => { $("msg").textContent = text; };
+
+const fmt = n => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// รอบค่าบริการ: ย้อนจากวันกำหนดชำระ 1 เดือน (เช่น 12/11/69 -> 12/10/69 – 11/11/69)
+// short = true -> พ.ศ. 2 หลัก (หน้าจอ), false -> ค.ศ. 4 หลัก (ใบเบิก ตามแบบฟอร์มเดิม เช่น 12/10/2026)
+function billingPeriod(due, short = true) {
+  const m = String(due).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return "";                                 // วันที่ในไฟล์ผิดรูปแบบ
+  const g = +m[3] - 543;
+  const start = new Date(g, +m[2] - 2, +m[1]);
+  const end = new Date(g, +m[2] - 1, +m[1] - 1);
+  const f = t => {
+    const y = short ? pad2((t.getFullYear() + 543) % 100) : t.getFullYear();
+    return pad2(t.getDate()) + "/" + pad2(t.getMonth() + 1) + "/" + y;
+  };
+  return f(start) + " – " + f(end);
+}
+
+// ค้นหาศูนย์จากรหัสแบบตรงทุกตัว (รหัสลูกค้า / หมายเลขบริการ / หมายเลขสำรอง ไม่สนเลข 0 นำหน้า)
+function findByCode(code) {
+  const norm = v => String(v || "").toUpperCase().replace(/\s/g, "").replace(/^0+/, "");
+  const key = norm(code);
+  if (!key) return null;
+  return CENTERS.find(d => norm(d.acc) === key || norm(d.svc) === key || (d.alt && norm(d.alt) === key));
+}
+
+/* =========================================================
+   3. แสดงผล / ค้นหาด้วยการพิมพ์
+   ========================================================= */
+let current = null;   // ศูนย์ที่แสดงอยู่
+
+function show(d) {
+  current = d;
+  $("result").style.display = "block";
+  $("rNo").textContent = d.no;
+  $("rName").textContent = d.name;
+  $("rAmt").textContent = fmt(d.amt);
+  $("rAcc").textContent = d.acc;
+  $("rSvc").textContent = d.svc;
+  $("rAlt").textContent = d.alt ? "สำรอง " + d.alt : "";
+  $("rDue").textContent = d.due;
+  $("rPeriod").textContent = billingPeriod(d.due);
+  setStatusChip($("rStatus"), d);
+  $("period").value = billingPeriod(d.due, false);  // รอบเดือนในใบเบิก (แก้เองได้)
+  markActive();
+  fillForm();
+  $("result").scrollIntoView({ behavior: "smooth" });
+}
+
+function hideResult() {
+  current = null;
+  $("result").style.display = "none";
+  markActive();
+}
+
+// ป้ายสถานะ: จ่ายแล้ว (พร้อมวันที่ ถ้ามี) / ยังไม่จ่าย
+function setStatusChip(el, d) {
+  el.className = "chip " + (d.paid ? "paid" : "unpaid");
+  el.textContent = d.paid ? "✓ จ่ายแล้ว" + (/\d/.test(d.paid) ? " " + d.paid : "") : "ยังไม่จ่าย";
+}
+
+/* =========================================================
+   3.1 สถานะการจ่าย: สรุปยอด + รายชื่อศูนย์ (กรอง ทั้งหมด / จ่ายแล้ว / ยังไม่จ่าย)
+   ========================================================= */
+let filter = "all";
+try { filter = localStorage.getItem("scan3bb.filter") || "all"; } catch (e) {}
+
+function renderStats() {
+  const sum = list => fmt(list.reduce((s, d) => s + d.amt, 0)) + " บาท";
+  const paid = CENTERS.filter(d => d.paid), unpaid = CENTERS.filter(d => !d.paid);
+  $("sPaidN").textContent = paid.length;
+  $("sPaidAmt").textContent = sum(paid);
+  $("sUnpaidN").textContent = unpaid.length;
+  $("sUnpaidAmt").textContent = sum(unpaid);
+  $("sAllN").textContent = CENTERS.length;
+  $("sAllAmt").textContent = sum(CENTERS);
+}
+
+function renderCenterList() {
+  renderStats();
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.f === filter));
+  const list = CENTERS.filter(d => filter === "all" || (filter === "paid") === !!d.paid);
+  $("listEmpty").hidden = list.length > 0;
+  $("listEmpty").textContent = filter === "paid"
+    ? "ยังไม่มีศูนย์ที่จ่ายแล้ว — กรอกวันที่จ่ายในคอลัมน์ \"วันที่จ่าย\" ของ data.xlsx"
+    : "ทุกศูนย์จ่ายแล้ว 🎉";
+  $("centerList").replaceChildren(...list.map(d => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "center" + (d.paid ? " is-paid" : "");
+    b.dataset.acc = d.acc;
+    const name = document.createElement("span");
+    name.className = "c-name";
+    name.textContent = d.name;
+    const meta = document.createElement("span");
+    meta.className = "c-meta";
+    meta.textContent = d.acc + " · ครบกำหนด " + d.due;
+    const amt = document.createElement("span");
+    amt.className = "c-amt";
+    amt.textContent = fmt(d.amt);
+    const chip = document.createElement("span");
+    setStatusChip(chip, d);
+    b.append(name, meta, chip, amt);
+    b.onclick = () => {
+      $("accIn").value = d.acc;
+      $("svcIn").value = "";
+      setMsg("");
+      show(d);
+    };
+    return b;
+  }));
+  markActive();
+}
+
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  filter = t.dataset.f;
+  try { localStorage.setItem("scan3bb.filter", filter); } catch (e) {}
+  renderCenterList();
+});
+
+function markActive() {
+  document.querySelectorAll("#centerList .center").forEach(b =>
+    b.classList.toggle("on", !!current && b.dataset.acc === current.acc));
+}
+
+function lookup(inputId) {
+  const v = $(inputId).value.trim();
+  const d = findByCode(v);
+  if (d) { setMsg(""); show(d); }
+  else { hideResult(); setMsg("ไม่พบ \"" + v + "\" ในระบบ ตรวจสอบตัวเลข/ตัวอักษรให้ครบทุกตัว"); }
+}
+
+$("accBtn").onclick = () => lookup("accIn");
+$("svcBtn").onclick = () => lookup("svcIn");
+
+["accIn", "svcIn"].forEach(id => {
+  const other = id === "accIn" ? "svcIn" : "accIn";
+  $(id).addEventListener("keydown", e => { if (e.key === "Enter") lookup(id); });
+  $(id).addEventListener("input", () => {
+    if ($(id).value) $(other).value = "";          // พิมพ์ช่องหนึ่ง ล้างอีกช่อง
+    setMsg("");
+    if (!$(id).value.trim()) hideResult();         // ลบเลขจนว่าง -> ซ่อนผลลัพธ์
+  });
+});
+
+/* =========================================================
+   4. แปลงตัวเลขเป็นตัวอักษรไทย (บาท)
+   ========================================================= */
+const DIGITS = ["ศูนย์", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
+const UNITS  = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน"];
+
+function thaiNumber(n) {
+  if (n === 0) return "";
+  if (n >= 1e6) {
+    const rest = n % 1e6;                            // 1,000,001 -> หนึ่งล้านเอ็ด
+    return thaiNumber(Math.floor(n / 1e6)) + "ล้าน" + (rest === 1 ? "เอ็ด" : thaiNumber(rest));
+  }
+  const s = String(n);
+  let r = "";
+  for (let i = 0; i < s.length; i++) {
+    const d = +s[i], p = s.length - i - 1;
+    if (!d) continue;
+    if (p === 1)      r += (d === 1 ? "" : d === 2 ? "ยี่" : DIGITS[d]) + "สิบ";
+    else if (p === 0) r += (d === 1 && s.length > 1 ? "เอ็ด" : DIGITS[d]);
+    else              r += DIGITS[d] + UNITS[p];
+  }
+  return r;
+}
+
+// ตามแบบฟอร์มเดิมของฝ่าย: ไม่มีคำว่า "ถ้วน" (เช่น เจ็ดร้อยสี่สิบเก้าบาท)
+function bahtText(a) {
+  const total = Math.round(a * 100);                 // ปัดเป็นสตางค์ก่อน กันทศนิยมเพี้ยน
+  const b = Math.floor(total / 100), s = total % 100;
+  if (!b && !s) return "ศูนย์บาท";
+  return (b ? thaiNumber(b) + "บาท" : "") + (s ? thaiNumber(s) + "สตางค์" : "");
+}
+
+/* =========================================================
+   5. พิมพ์ใบรายงานการขอเบิกค่าใช้จ่าย
+   ========================================================= */
+// เติมข้อมูลลงใบเบิกทุกครั้งที่เลือกศูนย์/แก้ช่อง -> กด Ctrl+P เองก็ได้ใบที่ถูกต้อง
+function fillForm() {
+  if (!current) return;
+  $("fPeriod").textContent  = $("period").value;
+  $("fName").textContent    = current.name;
+  $("fAmt").textContent     = fmt(current.amt);
+  $("fAmt2").textContent    = fmt(current.amt);
+  $("fWords").textContent   = bahtText(current.amt);
+  $("fMaker").textContent   = "(" + $("maker").value + ")";
+  $("fMakerPos").textContent = "(" + $("makerPos").value + ")";
+  $("fAppr").textContent    = "(" + $("appr").value + ")";
+  $("fApprPos").textContent = "(" + $("apprPos").value + ")";
+}
+
+["period", "maker", "makerPos", "appr", "apprPos"].forEach(id => $(id).addEventListener("input", fillForm));
+
+$("printBtn").onclick = () => {
+  if (!current) return;
+  fillForm();
+  window.print();
+};
+
+/* =========================================================
+   6. เปิดผ่านลิงก์ ?acc=รหัสลูกค้า
+   ========================================================= */
+loadCenters().then(() => {
+  renderCenterList();
+  const accParam = new URLSearchParams(location.search).get("acc");
+  if (accParam) {
+    const d = findByCode(accParam);
+    if (d) show(d);
+    else setMsg("รหัสลูกค้า " + accParam + " ในลิงก์ ไม่พบในระบบ");
+  }
+});
+
+/* =========================================================
+   7. จำชื่อ/ตำแหน่งผู้จัดทำและผู้อนุมัติไว้ในเครื่องนี้ (ครั้งหน้าไม่ต้องพิมพ์ใหม่)
+   ========================================================= */
+["maker", "makerPos", "appr", "apprPos"].forEach(id => {
+  const key = "scan3bb." + id;
+  try {
+    const saved = localStorage.getItem(key);
+    if (saved !== null) $(id).value = saved;
+  } catch (e) { /* โหมดส่วนตัว / ปิด storage -> ใช้ค่าเริ่มต้น */ }
+  $(id).addEventListener("change", () => {
+    try { localStorage.setItem(key, $(id).value); } catch (e) {}
+  });
+});
+</script>
+</body>
+</html>
